@@ -1,80 +1,93 @@
 import json
 import argparse
 from datetime import datetime, timedelta
+from sqlalchemy import create_engine, Column, Integer, String, Boolean, DateTime
+from sqlalchemy.orm import sessionmaker
+from sqlalchemy.ext.declarative import declarative_base
 
-TASK_FILE = "tasks.json"
+# Database Configuration
+DATABASE_URL = "sqlite:///tasks.db"
 
-def load_tasks():
+#Base for declarative models
+Base = declarative_base()
+# Define the Task Model
+class Task(Base):
+    __tablename__ = "tasks"
+
+    id = Column(Integer, primary_key=True)
+    task_type = Column(String)
+    description = Column(String)
+    due_date = Column(DateTime)
+    recurrence = Column(String)
+    season = Column(String)
+    completed = Column(Boolean)
+
+# Create database Engine and session
+engine = create_engine(DATABASE_URL)
+Base.metadata.create_all(engine) #Creates tables if needed.
+SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+
+# Dependency Injection for the database session
+def get_db():
+    db = SessionLocal()
     try:
-        with open(TASK_FILE, "r") as f:
-            return json.load(f)
-    except (FileNotFoundError, json.JSONDecodeError):
-        return {"one_time_tasks": [], "recurring_tasks": [], "seasonal_tasks": []}
+        yield db
+    finally:
+        db.close()
 
-def save_tasks(tasks):
-    with open(TASK_FILE, "w") as f:
-        json.dump(tasks, f, indent=4)
-
-def add_task(task_type, description, due_date=None, recurrence=None, season=None):
-    tasks = load_tasks()
-    task = {"description": description, "completed": False}
-    if due_date:
-        task["due_date"] = due_date
-    if recurrence:
-        task["recurrence"] = recurrence
-    if season:
-        task["season"] = season
-    
-    tasks[task_type].append(task)
-    save_tasks(tasks)
+def add_task(task_type, description, due_date=None, recurrence=None, season=None, db=next(get_db())):
+    due_datetime = datetime.strptime(due_date, "%Y-%m-%d") if due_date else None
+    task = Task(task_type=task_type, description=description, due_date=due_datetime, recurrence=recurrence, season=season, completed=False)
+    db.add(task)
+    db.commit()
     print(f"Added {task_type} task: {description}")
     
-def list_tasks(task_type):
-    tasks = load_tasks()
-    if not tasks[task_type]:
+def list_tasks(task_type, db=next(get_db())):
+    tasks = db.query(Task).filter(Task.task_type == task_type).all()
+    if not tasks:
         print(f"No {task_type} tasks.")
         return
     print(f"{task_type.title()} Tasks:")
-    for index, task in enumerate(tasks[task_type]):
-        print(f"  {index+1}. [ {'x' if task['completed'] else ' '} ] {task['description']}", end="")
-        if 'due_date' in task:
-            print(f" (Due: {task['due_date']})", end="")
-        if 'recurrence' in task:
-            print(f" (Every: {task['recurrence']})", end="")
-        if 'season' in task:
-            print(f" (Season: {task['season']})", end="")
+    for index, task in enumerate(tasks):
+        print(f"  {index+1}. [ {'x' if task.completed else ' '} ] {task.description}", end="")
+        if task.due_date:
+            print(f" (Due: {task.due_date.strftime('%Y-%m-%d')})", end="")
+        if task.recurrence:
+            print(f" (Every: {task.recurrence})", end="")
+        if task.season:
+            print(f" (Season: {task.season})", end="")
         print("")
 
-def mark_complete(task_type, task_index):
-    tasks = load_tasks()
+def mark_complete(task_type, task_index, db=next(get_db())):
+    tasks = db.query(Task).filter(Task.task_type == task_type).all()
     try:
-        task = tasks[task_type][task_index-1]
-        task["completed"] = True
-        save_tasks(tasks)
+        task = tasks[task_index-1]
+        task.completed = True
+        db.commit()
         print(f"Marked task {task_index} as complete.")
     except IndexError:
         print("Invalid task index")
         
-def mark_incomplete(task_type, task_index):
-    tasks = load_tasks()
+def mark_incomplete(task_type, task_index, db=next(get_db())):
+    tasks = db.query(Task).filter(Task.task_type == task_type).all()
     try:
-        task = tasks[task_type][task_index-1]
-        task["completed"] = False
-        save_tasks(tasks)
+        task = tasks[task_index-1]
+        task.completed = False
+        db.commit()
         print(f"Marked task {task_index} as incomplete.")
     except IndexError:
         print("Invalid task index")
 
-def delete_task(task_type, task_index):
-    tasks = load_tasks()
+def delete_task(task_type, task_index, db=next(get_db())):
+    tasks = db.query(Task).filter(Task.task_type == task_type).all()
     try:
-        del tasks[task_type][task_index-1]
-        save_tasks(tasks)
+        task = tasks[task_index-1]
+        db.delete(task)
+        db.commit()
         print(f"Deleted task {task_index}.")
     except IndexError:
         print("Invalid task index")
         
-
 def main():
     parser = argparse.ArgumentParser(description="Home Management System")
     subparsers = parser.add_subparsers(title="commands", dest="command")
