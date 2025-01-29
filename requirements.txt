@@ -1,6 +1,5 @@
 #No dependencies as of yet
 
 # First dependency
-SQLAlchemy
 Flask
 requests
