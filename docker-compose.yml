@@ -1,3 +1,4 @@
+version: "3.8"
 services:
   web:
     build:
@@ -9,6 +10,18 @@ services:
       - task-db-volume:/app
       - ./logs:/app/logs
     restart: on-failure
+    depends_on:
+      - task_service
+  task_service:
+    build:
+      context: ./task_service
+      dockerfile: Dockerfile
+    ports:
+      - "8000:8000"
+    volumes:
+      - task-db-volume:/app
+    restart: on-failure
+
 
 volumes:
   task-db-volume:

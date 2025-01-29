@@ -3,3 +3,4 @@
 # First dependency
 SQLAlchemy
 Flask
+requests
