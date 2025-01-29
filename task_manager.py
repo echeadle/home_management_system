@@ -4,6 +4,9 @@ from datetime import datetime, timedelta
 from sqlalchemy import create_engine, Column, Integer, String, Boolean, DateTime
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.ext.declarative import declarative_base
+import logging
+from flask import current_app
+import os
 
 # Database Configuration
 DATABASE_URL = "sqlite:///tasks.db"
@@ -35,58 +38,95 @@ def get_db():
     finally:
         db.close()
 
-def add_task(task_type, description, due_date=None, recurrence=None, season=None, db=next(get_db())):
-    due_datetime = datetime.strptime(due_date, "%Y-%m-%d") if due_date else None
+def add_task(task_type, description, due_date=None, recurrence=None, season=None, db=None, log_file=None):
+    if not db:
+        db = next(get_db())
+    if due_date:
+        due_datetime = datetime.strptime(due_date, "%Y-%m-%d")
+    else:
+        due_datetime = None
     task = Task(task_type=task_type, description=description, due_date=due_datetime, recurrence=recurrence, season=season, completed=False)
     db.add(task)
     db.commit()
-    print(f"Added {task_type} task: {description}")
-    
-def list_tasks(task_type, db=next(get_db())):
+    if log_file:
+        with open(log_file, "a") as f:
+            f.write(f"Added {task_type} task: {description}\n")
+        
+def list_tasks(task_type, db=None, log_file=None):
+    if not db:
+        db = next(get_db())
     tasks = db.query(Task).filter(Task.task_type == task_type).all()
+    if log_file:
+        with open(log_file, "a") as f:
+             f.write(f"list_tasks: {task_type}\n")
+             f.write(f"tasks: {tasks}\n")
     if not tasks:
-        print(f"No {task_type} tasks.")
-        return
-    print(f"{task_type.title()} Tasks:")
+        if log_file:
+            with open(log_file, "a") as f:
+                f.write(f"No {task_type} tasks.\n")
+        return []
+    if log_file:
+        with open(log_file, "a") as f:
+             f.write(f"{task_type.title()} Tasks:\n")
     for index, task in enumerate(tasks):
-        print(f"  {index+1}. [ {'x' if task.completed else ' '} ] {task.description}", end="")
-        if task.due_date:
-            print(f" (Due: {task.due_date.strftime('%Y-%m-%d')})", end="")
-        if task.recurrence:
-            print(f" (Every: {task.recurrence})", end="")
-        if task.season:
-            print(f" (Season: {task.season})", end="")
-        print("")
+        if log_file:
+            with open(log_file, "a") as f:
+                f.write(f"  {index+1}. [ {'x' if task.completed else ' '} ] {task.description}")
+                if task.due_date:
+                   f.write(f" (Due: {task.due_date.strftime('%Y-%m-%d')})")
+                if task.recurrence:
+                   f.write(f" (Every: {task.recurrence})")
+                if task.season:
+                   f.write(f" (Season: {task.season})\n")
+    return tasks
 
-def mark_complete(task_type, task_index, db=next(get_db())):
+def mark_complete(task_type, task_index, db=None, log_file=None):
+    if not db:
+        db = next(get_db())
     tasks = db.query(Task).filter(Task.task_type == task_type).all()
     try:
         task = tasks[task_index-1]
         task.completed = True
         db.commit()
-        print(f"Marked task {task_index} as complete.")
+        if log_file:
+             with open(log_file, "a") as f:
+                 f.write(f"Marked task {task_index} as complete.\n")
     except IndexError:
-        print("Invalid task index")
+        if log_file:
+            with open(log_file, "a") as f:
+                 f.write(f"Invalid task index\n")
         
-def mark_incomplete(task_type, task_index, db=next(get_db())):
+def mark_incomplete(task_type, task_index, db=None, log_file=None):
+    if not db:
+        db = next(get_db())
     tasks = db.query(Task).filter(Task.task_type == task_type).all()
     try:
         task = tasks[task_index-1]
         task.completed = False
         db.commit()
-        print(f"Marked task {task_index} as incomplete.")
+        if log_file:
+            with open(log_file, "a") as f:
+               f.write(f"Marked task {task_index} as incomplete.\n")
     except IndexError:
-        print("Invalid task index")
+        if log_file:
+            with open(log_file, "a") as f:
+               f.write(f"Invalid task index\n")
 
-def delete_task(task_type, task_index, db=next(get_db())):
+def delete_task(task_type, task_index, db=None, log_file=None):
+    if not db:
+        db = next(get_db())
     tasks = db.query(Task).filter(Task.task_type == task_type).all()
     try:
         task = tasks[task_index-1]
         db.delete(task)
         db.commit()
-        print(f"Deleted task {task_index}.")
+        if log_file:
+            with open(log_file, "a") as f:
+                f.write(f"Deleted task {task_index}.\n")
     except IndexError:
-        print("Invalid task index")
+       if log_file:
+          with open(log_file, "a") as f:
+             f.write(f"Invalid task index\n")
         
 def main():
     parser = argparse.ArgumentParser(description="Home Management System")
@@ -120,17 +160,20 @@ def main():
     delete_parser.add_argument("task_index", type=int, help="Index of task to delete")
     
     args = parser.parse_args()
+    log_dir = "/app/logs"
+    if not os.path.exists(log_dir):
+      os.makedirs(log_dir)
 
     if args.command == "add":
-        add_task(args.task_type, args.description, args.due_date, args.recurrence, args.season)
+        add_task(args.task_type, args.description, args.due_date, args.recurrence, args.season, log_file="/app/logs/app.log")
     elif args.command == "list":
-        list_tasks(args.task_type)
+        list_tasks(args.task_type, log_file="/app/logs/app.log")
     elif args.command == "complete":
-        mark_complete(args.task_type, args.task_index)
+        mark_complete(args.task_type, args.task_index, log_file="/app/logs/app.log")
     elif args.command == "incomplete":
-        mark_incomplete(args.task_type, args.task_index)
+        mark_incomplete(args.task_type, args.task_index, log_file="/app/logs/app.log")
     elif args.command == "delete":
-        delete_task(args.task_type, args.task_index)
+        delete_task(args.task_type, args.task_index, log_file="/app/logs/app.log")
     
 
 if __name__ == "__main__":

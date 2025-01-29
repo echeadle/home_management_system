@@ -12,6 +12,7 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 # Make task_manager.py executable
 RUN chmod +x task_manager.py
+RUN chmod +x web_app.py
 
 # Define the command to run your application
-CMD ["python", "task_manager.py"]
+CMD ["python", "web_app.py"]

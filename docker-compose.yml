@@ -1,0 +1,14 @@
+services:
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "5000:5000"
+    volumes:
+      - task-db-volume:/app
+      - ./logs:/app/logs
+    restart: on-failure
+
+volumes:
+  task-db-volume:

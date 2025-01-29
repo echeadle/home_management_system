@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Home Management System</title>
+    <style>
+        body { font-family: sans-serif; margin: 20px; }
+        h1 { text-align: center; }
+        .task-list { margin-top: 20px; }
+        .task-type { font-weight: bold; margin-bottom: 10px; }
+        .task-item { border: 1px solid #ccc; padding: 10px; margin-bottom: 5px; display: flex; justify-content: space-between; align-items: center; }
+        .completed { text-decoration: line-through; color: grey;}
+        .task-form { margin-top: 20px; border: 1px solid #eee; padding: 20px;}
+        .task-form label { display: block; margin-bottom: 5px;}
+        .task-form input[type="text"],
+        .task-form select,
+        .task-form input[type="date"]
+        {
+          width: 100%;
+          padding: 8px;
+          box-sizing: border-box;
+          margin-bottom: 10px;
+        }
+        .task-form button { background-color: #007BFF; color: white; border: none; padding: 10px 20px; cursor: pointer; }
+        .task-action-buttons{ display: flex; gap: 10px;}
+        .task-action-buttons button { background-color: #007BFF; color: white; border: none; padding: 5px 10px; cursor: pointer; font-size: 0.8em; }
+        .task-action-buttons button.complete {background-color: green}
+        .task-action-buttons button.incomplete {background-color: orange}
+        .task-action-buttons button.delete {background-color: red}
+    </style>
+</head>
+<body>
+    <h1>Home Management System</h1>
+    <div class="task-list">
+        {% for task_type, tasks in tasks.items() %}
+        <div class="task-type">{{ task_type.replace('_', ' ').title() }} Tasks</div>
+        {% if tasks %}
+            {% for task in tasks %}
+                <div class="task-item {% if task.completed %}completed{% endif %}">
+                    <div>{{ task.description }}{% if task.due_date %} (Due: {{task.due_date}}){% endif %}{% if task.recurrence %} (Every: {{ task.recurrence }}){% endif %}{% if task.season %} (Season: {{ task.season }}){% endif %}</div>
+                    <div class="task-action-buttons">
+                        <form method="post" action="/complete/{{ task_type }}/{{ loop.index }}">
+                            <button type="submit" class="complete" {% if task.completed %}disabled{% endif %}>Complete</button>
+                        </form>
+                         <form method="post" action="/incomplete/{{ task_type }}/{{ loop.index }}">
+                            <button type="submit" class="incomplete" {% if not task.completed %}disabled{% endif %}>Incomplete</button>
+                        </form>
+                        <form method="post" action="/delete/{{ task_type }}/{{ loop.index }}">
+                           <button type="submit" class="delete">Delete</button>
+                        </form>
+                    </div>
+                </div>
+            {% endfor %}
+        {% else %}
+            <p>No tasks for this type.</p>
+        {% endif %}
+        {% endfor %}
+    </div>
+    <div class="task-form">
+        <h2>Add New Task</h2>
+        <form method="post" action="/add">
+            <label for="task_type">Task Type:</label>
+            <select name="task_type">
+                <option value="one_time_tasks">One Time Task</option>
+                <option value="recurring_tasks">Recurring Task</option>
+                <option value="seasonal_tasks">Seasonal Task</option>
+            </select>
+            <label for="description">Description:</label>
+            <input type="text" name="description" required>
+             <label for="due_date">Due Date (YYYY-MM-DD)</label>
+            <input type="date" name="due_date">
+             <label for="recurrence">Recurrence</label>
+            <input type="text" name="recurrence">
+             <label for="season">Season</label>
+            <input type="text" name="season">
+            <button type="submit">Add Task</button>
+        </form>
+    </div>
+</body>
+</html>
