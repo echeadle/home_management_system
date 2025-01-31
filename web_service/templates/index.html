@@ -44,9 +44,6 @@
                          <form method="post" action="/incomplete/{{ task_type }}/{{ loop.index }}">
                             <button type="submit" class="incomplete" {% if not task.completed %}disabled{% endif %}>Incomplete</button>
                         </form>
-                        <form method="post" action="/delete/{{ task_type }}/{{ loop.index }}">
-                           <button type="submit" class="delete">Delete</button>
-                        </form>
                     </div>
                 </div>
             {% endfor %}

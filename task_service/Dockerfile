@@ -10,8 +10,5 @@ COPY . /app
 # Install any needed packages specified in requirements.txt
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Make task_manager.py executable
-RUN chmod +x main.py
-
 # Define the command to run your application
 CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]

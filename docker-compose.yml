@@ -1,13 +1,12 @@
 services:
   web:
     build:
-      context: .
+      context: ./web_service
       dockerfile: Dockerfile
     ports:
       - "5000:5000"
     volumes:
-      - task-db-volume:/app
-      - ./logs:/app/logs
+      - task-web-volume:/app
     restart: on-failure
     depends_on:
       - task_service
@@ -18,9 +17,10 @@ services:
     ports:
       - "8000:8000"
     volumes:
-      - task-db-volume:/app
+      - task-service-volume:/app
     restart: on-failure
 
 
 volumes:
-  task-db-volume:
+  task-web-volume:
+  task-service-volume:

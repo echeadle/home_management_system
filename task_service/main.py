@@ -1,7 +1,7 @@
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
 from typing import Optional
-from task_manager import add_task, list_tasks, mark_complete, mark_incomplete, delete_task, get_db
+from task_manager import add_task, list_tasks, mark_complete, mark_incomplete, get_db
 from datetime import datetime
 
 app = FastAPI()
@@ -44,8 +44,3 @@ def complete_task(task_type:str, task_index:int):
 def incomplete_task(task_type:str, task_index:int):
     mark_incomplete(task_type, task_index)
     return {"message": f"task {task_index} marked as incomplete"}
-
-@app.delete("/tasks/{task_type}/{task_index}")
-def delete_task(task_type:str, task_index:int):
-    delete_task(task_type, task_index)
-    return {"message": f"task {task_index} deleted"}

@@ -4,13 +4,7 @@ import requests
 import os
 
 app = Flask(__name__)
-#we will configure the logger using the base app object instead of the python logger.
-app.logger.setLevel(logging.DEBUG)
-log_file="/app/logs/app.log"
 task_service_url = "http://task_service:8000"
-log_dir = "/app/logs"
-if not os.path.exists(log_dir):
-  os.makedirs(log_dir)
 
 
 def get_tasks(task_type):
@@ -19,7 +13,7 @@ def get_tasks(task_type):
         response.raise_for_status()
         return response.json()
     except requests.exceptions.RequestException as e:
-        app.logger.error(f"Error getting tasks: {e}")
+        print(f"Error getting tasks: {e}")
         return []
     
 
@@ -36,7 +30,7 @@ def add_task(task_type, description, due_date=None, recurrence=None, season=None
         response.raise_for_status()
         return True
     except requests.exceptions.RequestException as e:
-        app.logger.error(f"Error adding tasks: {e}")
+        print(f"Error adding tasks: {e}")
         return False
 
 def complete_task(task_type, task_index):
@@ -45,7 +39,7 @@ def complete_task(task_type, task_index):
         response.raise_for_status()
         return True
     except requests.exceptions.RequestException as e:
-        app.logger.error(f"Error completing task: {e}")
+        print(f"Error completing task: {e}")
         return False
 
 def incomplete_task(task_type, task_index):
@@ -54,25 +48,15 @@ def incomplete_task(task_type, task_index):
         response.raise_for_status()
         return True
     except requests.exceptions.RequestException as e:
-        app.logger.error(f"Error incompleting task: {e}")
+        print(f"Error incompleting task: {e}")
         return False
     
-def delete_task(task_type, task_index):
-    try:
-         response = requests.delete(f"{task_service_url}/tasks/{task_type}/{task_index}")
-         response.raise_for_status()
-         return True
-    except requests.exceptions.RequestException as e:
-        app.logger.error(f"Error deleting task: {e}")
-        return False
-
 @app.route("/")
 def index():
-    app.logger.info("index")
     tasks = {}
     for task_type in ["one_time_tasks", "recurring_tasks", "seasonal_tasks"]:
         tasks[task_type] = get_tasks(task_type)
-    app.logger.info(f"tasks: {tasks}")
+    print(f"tasks: {tasks}")
     return render_template("index.html", tasks=tasks)
 
 
@@ -95,12 +79,6 @@ def complete(task_type, task_index):
 def incomplete(task_type, task_index):
     incomplete_task(task_type,task_index)
     return redirect(url_for("index"))
-
-@app.route("/delete/<task_type>/<int:task_index>", methods=["POST"])
-def delete(task_type, task_index):
-    delete_task(task_type, task_index)
-    return redirect(url_for("index"))
-
 
 if __name__ == "__main__":
     app.run(debug=True, host="0.0.0.0")
