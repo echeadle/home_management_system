@@ -1,0 +1,17 @@
+[
+    {
+        "id": 1,
+        "name": "Refrigerator",
+        "model_number": "XYZ-123"
+    },
+    {
+        "id": 2,
+        "name": "Washing Machine",
+        "model_number": "ABC-456"
+    },
+    {
+        "id": 3,
+        "name": "Dishwasher",
+        "model_number": "MNO-789"
+    }
+]

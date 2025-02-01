@@ -10,6 +10,7 @@ services:
     restart: on-failure
     depends_on:
       - task_service
+      - manual_reader_service
   task_service:
     build:
       context: ./task_service
@@ -19,7 +20,15 @@ services:
     volumes:
       - task-service-volume:/app
     restart: on-failure
-
+  manual_reader_service:
+    build:
+      context: ./manual_reader_service
+      dockerfile: Dockerfile
+    ports:
+      - "8001:8001"
+    volumes:
+      - ./manuals:/app/manuals
+    restart: on-failure
 
 volumes:
   task-web-volume:
