@@ -5,3 +5,6 @@ pypdf
 SQLAlchemy
 tiktoken
 openai
+langchain-community
+langchain-openai
+faiss-cpu

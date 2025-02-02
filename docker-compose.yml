@@ -27,9 +27,14 @@ services:
     ports:
       - "8001:8001"
     volumes:
-      - ./manuals:/app/manuals
+      - ./manuals:/manuals
+      - vectorstore-volume:/app/vectorstores
     restart: on-failure
+    environment:
+        OPENAI_API_KEY: ${OPENAI_API_KEY}
+
 
 volumes:
   task-web-volume:
   task-service-volume:
+  vectorstore-volume:
