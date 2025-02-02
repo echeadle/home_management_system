@@ -8,7 +8,9 @@ from langchain_community.vectorstores import FAISS
 import os
 import json
 from dotenv import load_dotenv
-
+from langchain.vectorstores.faiss import FAISS
+from langchain.chains import RetrievalQA
+from langchain_openai import ChatOpenAI
 
 load_dotenv()
 
@@ -63,10 +65,10 @@ def add_manual(manual: ManualUpload):
         embeddings = OpenAIEmbeddings(openai_api_key=os.getenv("OPENAI_API_KEY"))
         db = FAISS.from_documents(chunks, embeddings)
         
-        print(f"Saving vector store to vectorstores/{appliance['id']}/index.faiss")
+        print(f"Saving vector store to /app/vectorstores/{appliance['id']}/index.faiss")
         with open("/app/log.txt", "a") as f:
              f.write(f"Saving vector store to vectorstores/{appliance['id']}/index.faiss\n")
-        db.save_local(f"./vectorstores/{appliance['id']}")
+        db.save_local(f"vectorstores/{appliance['id']}/index.faiss", allow_dangerous_deserialization=True)
         return {"message": f"Manual ingested for {appliance['name']}"}
     except Exception as e:
           print(f"Error: {e}")
@@ -85,15 +87,16 @@ def query_manual(appliance_name: str, query_request: QueryRequest):
         with open("/app/log.txt", "a") as f:
             f.write(f"Querying {appliance_name}...\n")
         embeddings = OpenAIEmbeddings(openai_api_key=os.getenv("OPENAI_API_KEY"))
-        print(f"Loading vector store from vectorstores/{appliance['id']}")
+        print(f"Loading vector store from /app/vectorstores/{appliance['id']}/index.faiss")
         with open("/app/log.txt", "a") as f:
-            f.write(f"Loading vector store from vectorstores/{appliance['id']}\n")
+            f.write(f"Loading vector store from vectorstores/{appliance['id']}/index.faiss\n")
         db = FAISS.load_local(f"vectorstores/{appliance['id']}", embeddings, allow_dangerous_deserialization=True)
-
-        results = db.similarity_search(query_request.query)
-        return {"results":results}
+        llm = ChatOpenAI(openai_api_key=os.getenv("OPENAI_API_KEY"), model="gpt-3.5-turbo")
+        qa = RetrievalQA.from_chain_type(llm=llm, chain_type="stuff", retriever=db.as_retriever())
+        response = qa.run(query_request.query)
+        return {"results":response}
     except Exception as e:
         print(f"Error: {e}")
         with open("/app/log.txt", "a") as f:
-            f.write(f"Error: {e}\n")
+             f.write(f"Error: {e}\n")
         raise HTTPException(status_code=500, detail="Error querying manual")
