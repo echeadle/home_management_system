@@ -18,7 +18,6 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 # Make main.py executable
 RUN chmod +x main.py
-RUN chmod +x create_vectorstore.py
 
 # Define the command to run your application
 CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8001"]

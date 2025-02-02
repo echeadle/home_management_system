@@ -27,7 +27,6 @@ services:
     ports:
       - "8001:8001"
     volumes:
-      - ./manuals:/manuals
       - vectorstore-volume:/app/vectorstores
     restart: on-failure
     environment:
