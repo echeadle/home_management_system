@@ -8,7 +8,7 @@ from langchain_community.vectorstores import FAISS
 import os
 import json
 from dotenv import load_dotenv
-from langchain.vectorstores.faiss import FAISS
+
 
 load_dotenv()
 
