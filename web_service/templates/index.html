@@ -26,6 +26,15 @@
         .task-action-buttons button.complete {background-color: green}
         .task-action-buttons button.incomplete {background-color: orange}
         .task-action-buttons button.delete {background-color: red}
+        .ai-form { margin-top: 20px; border: 1px solid #eee; padding: 20px;}
+        .ai-form label { display: block; margin-bottom: 5px;}
+        .ai-form textarea {
+          width: 100%;
+          padding: 8px;
+          box-sizing: border-box;
+          margin-bottom: 10px;
+        }
+
     </style>
 </head>
 <body>
@@ -71,6 +80,28 @@
             <input type="text" name="season">
             <button type="submit">Add Task</button>
         </form>
+    </div>
+    <div class="ai-form">
+        <h2>Add Manual and Query</h2>
+        <form method="post" action="/"  enctype="multipart/form-data">
+            <label for="appliance_name">Appliance Name:</label>
+            <select name="appliance_name">
+                <option value="Refrigerator">Refrigerator</option>
+                <option value="Washing Machine">Washing Machine</option>
+                <option value="Dishwasher">Dishwasher</option>
+            </select>
+            <label for="manual">User Manual:</label>
+            <input type="file" name="manual" required>
+             <button type="submit">Upload Manual</button>
+             <label for="query">Query:</label>
+            <textarea name="query" required></textarea>
+           <button type="submit">Query Manual</button>
+
+        </form>
+           {% if results %}
+           <h2>Results</h2>
+           <p>{{ results.results }}</p>
+            {% endif %}
     </div>
 </body>
 </html>

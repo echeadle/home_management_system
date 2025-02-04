@@ -5,7 +5,7 @@ import os
 
 app = Flask(__name__)
 task_service_url = "http://task_service:8000"
-
+manual_service_url = "http://manual_reader_service:8001"
 
 def get_tasks(task_type):
     try:
@@ -50,14 +50,44 @@ def incomplete_task(task_type, task_index):
     except requests.exceptions.RequestException as e:
         print(f"Error incompleting task: {e}")
         return False
-    
-@app.route("/")
+
+def add_manual(appliance_name, file_path):
+     try:
+          data = {"appliance_name": appliance_name, "file_path": file_path}
+          response = requests.post(f"{manual_service_url}/manuals", json=data)
+          response.raise_for_status()
+          return True
+     except requests.exceptions.RequestException as e:
+          print(f"Error adding manual: {e}")
+          return False
+      
+def query_manual(appliance_name, query):
+    try:
+        data = {"query": query}
+        response = requests.post(f"{manual_service_url}/query/{appliance_name}", json=data)
+        response.raise_for_status()
+        return response.json()
+    except requests.exceptions.RequestException as e:
+        print(f"Error querying manual: {e}")
+        return None
+
+
+@app.route("/", methods=["GET", "POST"])
 def index():
     tasks = {}
     for task_type in ["one_time_tasks", "recurring_tasks", "seasonal_tasks"]:
         tasks[task_type] = get_tasks(task_type)
-    print(f"tasks: {tasks}")
-    return render_template("index.html", tasks=tasks)
+    results = None
+    if request.method == "POST":
+        if "manual" in request.files:
+            manual = request.files["manual"]
+            if manual.filename != "":
+                manual_path = os.path.join("/app/manuals", manual.filename)
+                manual.save(manual_path)
+                add_manual(request.form["appliance_name"], manual_path)
+        elif "query" in request.form:
+             results = query_manual(request.form["appliance_name"], request.form["query"])
+    return render_template("index.html", tasks=tasks, results=results)
 
 
 @app.route("/add", methods=["POST"])
@@ -72,12 +102,12 @@ def add():
 
 @app.route("/complete/<task_type>/<int:task_index>", methods=["POST"])
 def complete(task_type, task_index):
-    complete_task(task_type,task_index)
+    complete_task(task_type, task_index)
     return redirect(url_for("index"))
 
 @app.route("/incomplete/<task_type>/<int:task_index>", methods=["POST"])
 def incomplete(task_type, task_index):
-    incomplete_task(task_type,task_index)
+    incomplete_task(task_type, task_index)
     return redirect(url_for("index"))
 
 if __name__ == "__main__":

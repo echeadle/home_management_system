@@ -14,8 +14,6 @@ from langchain_core.prompts import PromptTemplate
 from langchain.chains import create_retrieval_chain
 from langchain_core.runnables import RunnablePassthrough
 from langchain_core.output_parsers import StrOutputParser
-from langchain.prompts import PromptTemplate
-from langchain.chains.question_answering import load_qa_chain
 
 load_dotenv()
 
@@ -97,23 +95,11 @@ def query_manual(appliance_name: str, query_request: QueryRequest):
             f.write(f"Loading vector store from vectorstores/{appliance['id']}/index.faiss\n")
         db = FAISS.load_local(f"vectorstores/{appliance['id']}/index.faiss", embeddings, allow_dangerous_deserialization=True)
         llm = ChatOpenAI(openai_api_key=os.getenv("OPENAI_API_KEY"), model="gpt-4o-2024-05-13")
-
-        prompt_template = """Use the following context to answer the question at the end.
-        If you don't know the answer, just say that you don't know, don't try to make up an answer.
-
-        {context}
-
-        Question: {question}"""
-        PROMPT = PromptTemplate(
-            template=prompt_template, input_variables=["context", "question"]
-        )
-
-        chain = load_qa_chain(llm, chain_type="stuff", prompt=PROMPT)
-
-        search = db.similarity_search(query_request.query)
-
-        response = chain({"input_documents": search, "question": query_request.query}, return_only_outputs=True)
-        return {"results": response["output_text"]}
+        prompt = PromptTemplate.from_template("Use the context to answer the following question: {question} \n\n Context:{context}")
+        retriever = db.as_retriever()
+        retrieval_chain = create_retrieval_chain(llm, retriever)
+        response = retrieval_chain.run({"question": query_request.query})
+        return {"results":response}
     except Exception as e:
         print(f"Error: {e}")
         with open("/app/log.txt", "a") as f:
